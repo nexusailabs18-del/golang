@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func main() {
+func switchx() {
 	fmt.Println("When's Saturday?")
 	today := time.Now().Weekday()
 	switch time.Saturday {
@@ -18,4 +18,14 @@ func main() {
 	default:
 		fmt.Println("Too far away.")
 	}
+}
+
+func main() {
+	switchx()
+	fmt.Println("counting")
+
+	for i := 0; i < 4; i++ {
+		defer fmt.Println(i)
+	}
+	fmt.Println("done")
 }
