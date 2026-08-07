@@ -36,6 +36,18 @@ func main() {
 	a = f                // MyFloat satisfies Abser
 	fmt.Println(a.Abs()) // Output: 1.4142135623730951
 
-	a = &v               // *Vertex satisfies Abser
-	fmt.Println(a.Abs()) // Output: 5
+	a = &v // *Vertex satisfies Abser
+	fmt.Println(a.Abs())
+	var i I = T{"hello"}
+	i.M()
+}
+
+type I interface{ M() }
+
+type T struct {
+	S string
+}
+
+func (t T) M() {
+	fmt.Println(t.S)
 }
