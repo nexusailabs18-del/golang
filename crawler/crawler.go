@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -100,7 +101,6 @@ func (c *Crawler) markVisited(pageURL string) bool {
 
 // fetch downloads a webpage and extracts its raw links.
 func (c *Crawler) fetch(pageURL string) ([]string, int, error) {
-	// Apply politeness delay
 	c.mu.Lock()
 	timeSinceLastFetch := time.Since(c.lastFetch)
 	if timeSinceLastFetch < c.delay {
@@ -116,7 +116,7 @@ func (c *Crawler) fetch(pageURL string) ([]string, int, error) {
 		return nil, 0, err
 	}
 
-	req.Header.Set("User-Agent", "GoCrawler/1.0 (Educational Project)")
+	req.Header.Set("User-Agent", "GentleMan")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 
@@ -128,7 +128,20 @@ func (c *Crawler) fetch(pageURL string) ([]string, int, error) {
 
 	status := resp.StatusCode
 
-	// Track all status codes, even errors
+	// Read body ONCE
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, status, fmt.Errorf("failed to read body: %w", err)
+	}
+	bodyString := string(bodyBytes)
+
+	// Bot detection check
+	if strings.Contains(bodyString, "verify you are human") ||
+		strings.Contains(bodyString, "captcha") ||
+		strings.Contains(bodyString, "unusual traffic") {
+		return nil, 200, fmt.Errorf("bot detection page, not real content")
+	}
+
 	if status < 200 || status >= 300 {
 		return nil, status, fmt.Errorf("HTTP %d: %s", status, resp.Status)
 	}
@@ -138,7 +151,8 @@ func (c *Crawler) fetch(pageURL string) ([]string, int, error) {
 		return nil, status, fmt.Errorf("not HTML: %s", contentType)
 	}
 
-	doc, err := html.Parse(resp.Body)
+	// Parse from string — NOT the drained body
+	doc, err := html.Parse(strings.NewReader(bodyString))
 	if err != nil {
 		return nil, status, err
 	}
